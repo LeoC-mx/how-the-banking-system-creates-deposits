@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fractional Reserve Banking Flowchart</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .node rect {
+            fill: #ffffff;
+            stroke: #cbd5e1;
+            stroke-width: 2px;
+            rx: 8;
+            ry: 8;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover rect {
+            stroke: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+        }
+
+        .node text {
+            font-size: 14px;
+            fill: #1e293b;
+            pointer-events: none;
+        }
+
+        .node .value {
+            font-weight: bold;
+            fill: #0ea5e9;
+        }
+
+        .node .label {
+            font-size: 12px;
+            fill: #64748b;
+        }
+
+        .link {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-width: 2px;
+            stroke-dasharray: 5, 5;
+            animation: flowDash 20s linear infinite;
+        }
+
+        @keyframes flowDash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            max-width: 250px;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 1px solid #bfdbfe;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 z-10 p-4">
+        <div class="max-w-7xl mx-auto flex flex-col xl:flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">How Banks Create Deposits</h1>
+                <p class="text-sm text-slate-500">Interactive Fractional Reserve Banking Model</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-4 w-full xl:w-auto justify-end">
+                <div class="stat-card p-3 rounded-lg flex-1 md:flex-none md:w-36 shadow-sm">
+                    <p class="text-[10px] text-blue-600 font-semibold uppercase tracking-wider">Initial Deposit</p>
+                    <p class="text-lg font-bold text-slate-800" id="initial-deposit-display">$1,000</p>
+                </div>
+                <div class="stat-card p-3 rounded-lg flex-1 md:flex-none md:w-36 shadow-sm border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50">
+                    <p class="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider">Total Deposit</p>
+                    <p class="text-lg font-bold text-indigo-700" id="total-supply-display">$1,000</p>
+                </div>
+                <div class="stat-card p-3 rounded-lg flex-1 md:flex-none md:w-36 shadow-sm border-indigo-200 bg-gradient-to-br from-indigo-50 to-blue-50">
+                    <p class="text-[10px] text-indigo-600 font-semibold uppercase tracking-wider">Banking Multiplier</p>
+                    <p class="text-lg font-bold text-indigo-700" id="multiplier-display">1.0x</p>
+                </div>
+                <div class="stat-card p-3 rounded-lg flex-1 md:flex-none md:w-36 shadow-sm border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50">
+                    <p class="text-[10px] text-teal-600 font-semibold uppercase tracking-wider">Maximum Deposit</p>
+                    <p class="text-lg font-bold text-teal-700" id="max-deposit-display">$10,000</p>
+                </div>
+                <div class="stat-card p-3 rounded-lg flex-1 md:flex-none md:w-36 shadow-sm border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50">
+                    <p class="text-[10px] text-teal-600 font-semibold uppercase tracking-wider">Max Multiplier</p>
+                    <p class="text-lg font-bold text-teal-700" id="max-multiplier-display">10.0x</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- Controls Panel -->
+        <aside class="w-full md:w-80 bg-white shadow-md z-10 p-6 flex flex-col gap-6 overflow-y-auto">
+            <div class="mb-4">
+                <h2 class="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Parameters
+                </h2>
+                
+                <div class="mb-6">
+                    <label class="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                        <span>Reserve Requirement</span>
+                        <span id="reserve-label" class="text-blue-600 font-bold">10%</span>
+                    </label>
+                    <input type="range" id="reserve-rate" min="1" max="100" value="10" class="w-full">
+                    <p class="text-xs text-slate-500 mt-2">The percentage of deposits banks must keep in vault cash or at the central bank.</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="flex justify-between text-sm font-medium text-slate-700 mb-2">
+                        <span>Number of Banks (Rounds)</span>
+                        <span id="banks-label" class="text-blue-600 font-bold">5</span>
+                    </label>
+                    <input type="range" id="num-banks" min="1" max="10" value="5" class="w-full">
+                    <p class="text-xs text-slate-500 mt-2">How many lending cycles to simulate visually.</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-700 mb-2">How it works:</h3>
+                <ol class="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+                    <li>A customer deposits new money (e.g., from the Central Bank).</li>
+                    <li>The bank keeps a fraction as <strong>Reserves</strong>.</li>
+                    <li>The bank lends out the rest (<strong>Excess Reserves</strong>).</li>
+                    <li>The loan is spent and deposited into another bank.</li>
+                    <li>The cycle repeats, multiplying the initial money.</li>
+                </ol>
+            </div>
+        </aside>
+
+        <!-- Visualization Area -->
+        <div class="flex-1 relative bg-slate-50" id="viz-container">
+            <div id="tooltip" class="tooltip"></div>
+            <!-- D3 SVG will be appended here -->
+        </div>
+
+        <!-- Balance Sheet Panel -->
+        <aside class="w-full md:w-80 bg-white shadow-md z-10 flex flex-col border-l border-slate-200">
+            <div class="p-6 border-b border-slate-100 bg-slate-50 sticky top-0 z-20">
+                <h2 class="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    System Balance Sheet
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">Aggregate totals at each step</p>
+            </div>
+            <div id="balance-sheet-cards" class="p-4 overflow-y-auto flex-1 flex flex-col gap-4">
+                <!-- Cards will be populated here -->
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // State variables
+        let state = {
+            initialDeposit: 1000,
+            reserveRate: 0.10, // 10%
+            numBanks: 5
+        };
+
+        const formatCurrency = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0
+        });
+
+        // DOM Elements
+        const reserveInput = document.getElementById('reserve-rate');
+        const banksInput = document.getElementById('num-banks');
+        const reserveLabel = document.getElementById('reserve-label');
+        const banksLabel = document.getElementById('banks-label');
+        
+        const initialDisplay = document.getElementById('initial-deposit-display');
+        const totalDisplay = document.getElementById('total-supply-display');
+        const multiplierDisplay = document.getElementById('multiplier-display');
+        const maxDepositDisplay = document.getElementById('max-deposit-display');
+        const maxMultiplierDisplay = document.getElementById('max-multiplier-display');
+        const tooltip = document.getElementById('tooltip');
+        const container = document.getElementById('viz-container');
+
+        // Event Listeners
+        reserveInput.addEventListener('input', (e) => {
+            state.reserveRate = e.target.value / 100;
+            reserveLabel.textContent = `${e.target.value}%`;
+            updateVisualization();
+        });
+
+        banksInput.addEventListener('input', (e) => {
+            state.numBanks = parseInt(e.target.value);
+            banksLabel.textContent = state.numBanks;
+            updateVisualization();
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.resizeTimer) clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(updateVisualization, 200); // Debounce resize
+        });
+
+        function calculateData() {
+            let data = [];
+            let currentDeposit = state.initialDeposit;
+            
+            let cumulativeDeposits = 0;
+            let cumulativeLoans = 0;
+            let cumulativeReserves = 0;
+
+            for (let i = 0; i < state.numBanks; i++) {
+                // Round up the required reserves
+                const reserves = Math.ceil(currentDeposit * state.reserveRate);
+                
+                // Ensure loan doesn't go negative if deposit is small
+                const loan = Math.max(0, currentDeposit - reserves);
+                
+                cumulativeDeposits += currentDeposit;
+                cumulativeReserves += reserves;
+                cumulativeLoans += loan;
+                
+                data.push({
+                    id: i,
+                    bankName: `Bank ${i + 1}`,
+                    deposit: currentDeposit,
+                    reserves: reserves,
+                    loan: loan,
+                    isLast: i === state.numBanks - 1,
+                    // Track the aggregate state of the banks up to this step
+                    aggregate: {
+                        assets: {
+                            reserves: cumulativeReserves,
+                            loans: cumulativeLoans,
+                            total: cumulativeReserves + cumulativeLoans
+                        },
+                        liabilities: {
+                            deposits: cumulativeDeposits,
+                            total: cumulativeDeposits
+                        }
+                    }
+                });
+
+                currentDeposit = loan; // Next bank's deposit is this bank's loan
+            }
+
+            // Update Header Stats to show actual accumulated values based on current step
+            totalDisplay.textContent = formatCurrency.format(cumulativeDeposits);
+            
+            // Calculate effective multiplier at this stage
+            const effectiveMultiplier = cumulativeDeposits / state.initialDeposit;
+            multiplierDisplay.textContent = effectiveMultiplier.toFixed(2) + 'x';
+
+            // Calculate Theoretical Maximums
+            const maxMultiplier = 1 / state.reserveRate;
+            const maxDeposit = state.initialDeposit * maxMultiplier;
+
+            maxMultiplierDisplay.textContent = maxMultiplier.toFixed(2) + 'x';
+            maxDepositDisplay.textContent = formatCurrency.format(maxDeposit);
+
+            return { data, maxTotalSupply: cumulativeDeposits }; // Keep maxTotalSupply in return object if needed by other functions, though we changed its meaning
+        }
+
+        function updateVisualization() {
+            const { data, maxTotalSupply } = calculateData();
+            
+            updateBalanceSheetUI(data);
+
+            // Clear previous SVG
+            d3.select("#viz-container").selectAll("svg").remove();
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const margin = { top: 40, right: 100, bottom: 40, left: 100 };
+            const innerWidth = width - margin.left - margin.right;
+            const innerHeight = height - margin.top - margin.bottom;
+
+            const svg = d3.select("#viz-container")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .call(d3.zoom().on("zoom", (e) => {
+                    svgGroup.attr("transform", e.transform);
+                }))
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Zoom group
+            const svgGroup = svg.append("g");
+
+            // Dimensions for nodes
+            const nodeWidth = 160;
+            const nodeHeight = 100;
+            const verticalSpacing = Math.min((innerHeight - nodeHeight) / Math.max(1, state.numBanks - 1), 150);
+            
+            // Adjust starting Y to center vertically if few banks
+            const totalHeight = (state.numBanks - 1) * verticalSpacing;
+            const startY = Math.max(0, (innerHeight - totalHeight) / 2 - 50);
+
+            // Draw Central Bank / Initial Source
+            const sourceNode = svgGroup.append("g")
+                .attr("transform", `translate(${innerWidth / 2 - nodeWidth / 2}, ${-margin.top + 10})`);
+
+            sourceNode.append("rect")
+                .attr("width", nodeWidth)
+                .attr("height", 40)
+                .attr("rx", 20)
+                .attr("fill", "#10b981")
+                .attr("opacity", 0.1)
+                .attr("stroke", "#10b981");
+            
+            sourceNode.append("text")
+                .attr("x", nodeWidth / 2)
+                .attr("y", 25)
+                .attr("text-anchor", "middle")
+                .style("fill", "#047857")
+                .style("font-weight", "bold")
+                .text("Initial Money Source");
+
+            // Define gradients
+            const defs = svgGroup.append("defs");
+            
+            const reserveGrad = defs.append("linearGradient")
+                .attr("id", "reserve-grad")
+                .attr("x1", "0%").attr("y1", "0%")
+                .attr("x2", "0%").attr("y2", "100%");
+            reserveGrad.append("stop").attr("offset", "0%").style("stop-color", "#fef2f2");
+            reserveGrad.append("stop").attr("offset", "100%").style("stop-color", "#fee2e2");
+
+            const loanGrad = defs.append("linearGradient")
+                .attr("id", "loan-grad")
+                .attr("x1", "0%").attr("y1", "0%")
+                .attr("x2", "0%").attr("y2", "100%");
+            loanGrad.append("stop").attr("offset", "0%").style("stop-color", "#f0fdf4");
+            loanGrad.append("stop").attr("offset", "100%").style("stop-color", "#dcfce7");
+
+            // Create links between banks
+            data.forEach((d, i) => {
+                const x = innerWidth / 2 - nodeWidth / 2;
+                const y = startY + i * verticalSpacing;
+
+                // Link from source to first bank
+                if (i === 0) {
+                    drawLink(svgGroup, 
+                        x + nodeWidth / 2, -margin.top + 50, 
+                        x + nodeWidth / 2, y, 
+                        d.deposit, "Deposit");
+                }
+
+                // Node group
+                const node = svgGroup.append("g")
+                    .attr("class", "node cursor-pointer")
+                    .attr("transform", `translate(${x},${y})`)
+                    .on("mouseover", (e) => showTooltip(e, d))
+                    .on("mouseout", hideTooltip);
+
+                // Main container rect
+                node.append("rect")
+                    .attr("width", nodeWidth)
+                    .attr("height", nodeHeight)
+                    .attr("fill", "#ffffff")
+                    .attr("rx", 8);
+
+                // Title bar
+                node.append("rect")
+                    .attr("width", nodeWidth)
+                    .attr("height", 30)
+                    .attr("rx", 8)
+                    .attr("fill", "#f8fafc")
+                    .style("stroke", "none");
+
+                // Bank Name
+                node.append("text")
+                    .attr("x", nodeWidth / 2)
+                    .attr("y", 20)
+                    .attr("text-anchor", "middle")
+                    .style("font-weight", "bold")
+                    .style("fill", "#334155")
+                    .text(d.bankName);
+
+                // Deposit amount
+                node.append("text")
+                    .attr("x", 10)
+                    .attr("y", 50)
+                    .attr("class", "label")
+                    .text("Deposit:");
+                node.append("text")
+                    .attr("x", nodeWidth - 10)
+                    .attr("y", 50)
+                    .attr("text-anchor", "end")
+                    .style("fill", "#0f172a")
+                    .style("font-weight", "bold")
+                    .text(formatCurrency.format(d.deposit));
+
+                // Reserve indicator (Left box) - Set to fixed widths as requested
+                const reserveWidth = 45;
+                const gap = 4;
+                const loanWidth = (nodeWidth - 20) - reserveWidth - gap;
+
+                // Visual bar for Reserves
+                node.append("rect")
+                    .attr("x", 10)
+                    .attr("y", 65)
+                    .attr("width", reserveWidth)
+                    .attr("height", 25)
+                    .attr("rx", 4)
+                    .attr("fill", "url(#reserve-grad)")
+                    .attr("stroke", "#f87171")
+                    .attr("stroke-width", 1);
+                
+                // Text for reserves (always shown since width is fixed)
+                node.append("text")
+                    .attr("x", 10 + reserveWidth / 2)
+                    .attr("y", 82)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "10px")
+                    .style("fill", "#b91c1c")
+                    .text(formatCurrency.format(d.reserves));
+
+                // Visual bar for Loans
+                node.append("rect")
+                    .attr("x", 10 + reserveWidth + gap)
+                    .attr("y", 65)
+                    .attr("width", loanWidth)
+                    .attr("height", 25)
+                    .attr("rx", 4)
+                    .attr("fill", "url(#loan-grad)")
+                    .attr("stroke", "#4ade80")
+                    .attr("stroke-width", 1);
+
+                // Text for loans (always shown since width is fixed)
+                node.append("text")
+                    .attr("x", 10 + reserveWidth + gap + loanWidth / 2)
+                    .attr("y", 82)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "10px")
+                    .style("fill", "#15803d")
+                    .text(formatCurrency.format(d.loan));
+
+                // Draw link to next bank if not last
+                if (!d.isLast && i < state.numBanks - 1) {
+                    const nextX = innerWidth / 2 - nodeWidth / 2;
+                    const nextY = startY + (i + 1) * verticalSpacing;
+                    
+                    // Curvy link representing the loan being spent and deposited
+                    drawLink(svgGroup, 
+                        x + nodeWidth / 2 + 20, y + nodeHeight, // Start slightly right (loan side)
+                        nextX + nodeWidth / 2, nextY, // End at top middle of next
+                        d.loan, "Loan becomes Deposit");
+                } else if (d.isLast) {
+                    // Draw fading continuation
+                    const endY = y + nodeHeight + 40;
+                    svgGroup.append("path")
+                        .attr("d", `M ${x + nodeWidth / 2} ${y + nodeHeight} Q ${x + nodeWidth / 2 + 50} ${y + nodeHeight + 20} ${x + nodeWidth / 2} ${endY}`)
+                        .attr("class", "link")
+                        .style("stroke", "#cbd5e1")
+                        .style("stroke-dasharray", "2,2")
+                        .style("opacity", 0.5);
+                    
+                     svgGroup.append("text")
+                        .attr("x", x + nodeWidth / 2)
+                        .attr("y", endY + 15)
+                        .attr("text-anchor", "middle")
+                        .style("font-size", "12px")
+                        .style("fill", "#94a3b8")
+                        .style("font-style", "italic")
+                        .text("Cycle continues...");
+                }
+            });
+
+            // Initial center
+            d3.select("svg").transition().duration(750).call(
+                d3.zoom().transform, 
+                d3.zoomIdentity.translate(0, 0).scale(1)
+            );
+        }
+
+        function drawLink(group, x1, y1, x2, y2, amount, label) {
+            // Path
+            const path = d3.path();
+            path.moveTo(x1, y1);
+            // Curvy path
+            path.bezierCurveTo(x1, y1 + (y2 - y1) / 2, x2, y1 + (y2 - y1) / 2, x2, y2);
+
+            group.append("path")
+                .attr("d", path)
+                .attr("class", "link")
+                .attr("marker-end", "url(#arrowhead)");
+
+            // Add arrowhead marker definition if it doesn't exist
+            if (group.select("#arrowhead").empty()) {
+                group.append("defs").append("marker")
+                    .attr("id", "arrowhead")
+                    .attr("viewBox", "-0 -5 10 10")
+                    .attr("refX", 8)
+                    .attr("refY", 0)
+                    .attr("orient", "auto")
+                    .attr("markerWidth", 6)
+                    .attr("markerHeight", 6)
+                    .attr("xoverflow", "visible")
+                    .append("svg:path")
+                    .attr("d", "M 0,-5 L 10 ,0 L 0,5")
+                    .attr("fill", "#94a3b8")
+                    .style("stroke", "none");
+            }
+
+            // Link Label
+            const midY = y1 + (y2 - y1) / 2;
+            const midX = x1 + (x2 - x1) / 2;
+            
+            // Add background for text
+            group.append("rect")
+                .attr("x", midX + 10)
+                .attr("y", midY - 10)
+                .attr("width", 120)
+                .attr("height", 20)
+                .attr("fill", "rgba(255,255,255,0.8)")
+                .attr("rx", 4);
+
+            group.append("text")
+                .attr("x", midX + 15)
+                .attr("y", midY + 4)
+                .style("font-size", "11px")
+                .style("fill", "#64748b")
+                .text(`${label}: ${formatCurrency.format(amount)}`);
+        }
+
+        function showTooltip(event, d) {
+            tooltip.style.opacity = 1;
+            tooltip.innerHTML = `
+                <div class="font-bold text-slate-800 border-b pb-1 mb-2">${d.bankName}</div>
+                <div class="flex justify-between mb-1">
+                    <span class="text-slate-600">New Deposit:</span>
+                    <span class="font-semibold text-slate-800">${formatCurrency.format(d.deposit)}</span>
+                </div>
+                <div class="flex justify-between mb-1">
+                    <span class="text-slate-600">Required Reserves (${(state.reserveRate*100).toFixed(0)}%):</span>
+                    <span class="font-semibold text-red-500">${formatCurrency.format(d.reserves)}</span>
+                </div>
+                <div class="flex justify-between border-t pt-1 mt-1">
+                    <span class="text-slate-600">New Loan Created:</span>
+                    <span class="font-semibold text-green-500">${formatCurrency.format(d.loan)}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-2 italic">This loan of ${formatCurrency.format(d.loan)} adds to the total money supply and will be deposited into another bank.</p>
+            `;
+            
+            // Position tooltip
+            const rect = container.getBoundingClientRect();
+            let x = event.clientX - rect.left + 20;
+            let y = event.clientY - rect.top;
+
+            // Keep tooltip within container
+            if (x + 250 > rect.width) x = x - 270;
+            
+            tooltip.style.left = `${x}px`;
+            tooltip.style.top = `${y}px`;
+        }
+
+        function hideTooltip() {
+            tooltip.style.opacity = 0;
+        }
+
+        function updateBalanceSheetUI(data) {
+            const container = document.getElementById('balance-sheet-cards');
+            container.innerHTML = ''; // Clear previous
+
+            data.forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex-shrink-0';
+                
+                card.innerHTML = `
+                    <div class="bg-slate-100 px-3 py-2 border-b border-slate-200">
+                        <h4 class="font-bold text-slate-700 text-sm">After Depositing in ${d.bankName}</h4>
+                    </div>
+                    <div class="p-3 text-sm">
+                        <div class="grid grid-cols-2 gap-4 mb-2">
+                            <div>
+                                <h5 class="font-semibold text-slate-600 mb-1 border-b border-slate-100 pb-1">Assets</h5>
+                                <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                    <span>Reserves:</span>
+                                    <span>${formatCurrency.format(d.aggregate.assets.reserves)}</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-500">
+                                    <span>Loans:</span>
+                                    <span class="text-green-600 font-medium">${formatCurrency.format(d.aggregate.assets.loans)}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="font-semibold text-slate-600 mb-1 border-b border-slate-100 pb-1">Liabilities</h5>
+                                <div class="flex justify-between text-xs text-slate-500 mb-1">
+                                    <span>Deposits:</span>
+                                    <span class="text-blue-600 font-medium">${formatCurrency.format(d.aggregate.liabilities.deposits)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-2 mt-2">
+                            <div class="flex justify-between font-bold text-slate-800 text-xs">
+                                <span>Total:</span>
+                                <span>${formatCurrency.format(d.aggregate.assets.total)}</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-slate-800 text-xs">
+                                <span>Total:</span>
+                                <span>${formatCurrency.format(d.aggregate.liabilities.total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Initial render
+        updateVisualization();
+
+    </script>
+</body>
+</html>
